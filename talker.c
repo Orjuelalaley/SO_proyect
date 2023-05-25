@@ -13,6 +13,7 @@
 
 
 // Global statements
+char** matriz_GIDs ;
 
 
 // Prototypes
@@ -25,9 +26,15 @@ void funcioon_InvocarEleccioon (void) ;
 void funcioon_ImplementacioonDeTuberiias (
     char* mensaje
 ) ;
+int funcioon_CalcularUultimaFilaMatriz (
+    char** matriz_contar
+) ;
 void funcioon_ListarUsuarios (void) ;
 void funcioon_ListarIntegrantes (void) ;
 void funcioon_CrearGrupo (void) ;
+int funcioon_ElegirUsuarios (
+    char* gid
+) ;
 void funcioon_EnviarMensajeIndividual (void) ;
 void funcioon_EnviarMensajeGrupal (void) ;
 
@@ -36,6 +43,8 @@ int main ( int argc , char* argv[] ) {
 
     funcioon_ImprimirRol() ; 
 
+
+    matriz_GIDs = (char**) calloc(100,sizeof(char*)) ;
 
     funcioon_InvocarEleccioon() ;
 
@@ -183,7 +192,7 @@ void funcioon_ImplementacioonDeTuberiias ( char* mensaje ) {
     
     //// SECUENCIA PARA ENVIAR PID.
     	//// Asignar memoria a una cadena de texto para leer PID.
-    	char* textoPID = (char*) calloc(10,sizeof(char)) ;
+    	char* textoPID = (char*) calloc(5,sizeof(char)) ;
     	//// Obtener PID.
     	pid_t pid = getpid() ;
 	//// Guardar PID en la cadena de texto.
@@ -191,7 +200,7 @@ void funcioon_ImplementacioonDeTuberiias ( char* mensaje ) {
     	//// Imprimir PID.
     	printf ("* PID: %s\n",textoPID) ;
     	//// Escribir PID en la tubería.
-    	write (identificador,textoPID,10) ;
+    	write (identificador,textoPID,5) ;
 
     //// SECUENCIA PARA ENVIAR INSTRUCCIÓN.
     	//// Imprimir 'mensaje'.
@@ -202,6 +211,18 @@ void funcioon_ImplementacioonDeTuberiias ( char* mensaje ) {
     //// Cerrar la tubería.
     close (identificador) ;
 
+}
+
+
+int funcioon_CalcularUultimaFilaMatriz ( char** matriz ) {
+
+    int filas=0 ;
+
+    while ( matriz[filas] != NULL ) {
+	filas++ ;
+    }
+
+return filas;
 }
 
 
@@ -223,8 +244,8 @@ void funcioon_ListarUsuarios ( void ) {
     //// Leer e imprimir los PIDs.
     puts ("* TALKERS") ;
     for ( int contador_i=0 ; contador_i < filas ; contador_i++ ) {
-	char* texto_PID = (char*) calloc(10,sizeof(char)) ;
-	read (identificador,texto_PID,10) ;
+	char* texto_PID = (char*) calloc(5,sizeof(char)) ;
+	read (identificador,texto_PID,5) ;
 	printf ("PID: %s\n",texto_PID) ;
     }
 
@@ -257,6 +278,7 @@ void funcioon_CrearGrupo ( void ) {
     int identificador ;
 
     //// SECUENCIA PARA ENVIAR GID.
+
         //// Abrir la tubería ya creada, solo para la funcionalidad de escritura.
    	//// Parámetros: nombre de la tubería, funcionalidad.
    	identificador = open (nombreTuberiia,O_WRONLY) ;
@@ -266,6 +288,7 @@ void funcioon_CrearGrupo ( void ) {
    	close(identificador) ;
 
     //// SECUENCIA PARA CONFIRMAR GID.
+
         //// Abrir la tubería ya creada, solo para la funcionalidad de escritura.
    	//// Parámetros: nombre de la tubería, funcionalidad.
    	identificador = open (nombreTuberiia,O_RDONLY) ;
@@ -273,15 +296,118 @@ void funcioon_CrearGrupo ( void ) {
         char* texto_banderaConfirmacioon = (char*) calloc(10,sizeof(char)) ;
         //// Recibir bandera de confirmación desde la tubería.
         read (identificador,texto_banderaConfirmacioon,10) ;
-        //// Imprimir bandera de confirmación.
-	if ( strcmp(texto_banderaConfirmacioon,"Afirmativo") == 0 ) {
-	    puts ("La creación del nuevo grupo fue exitosa.") ;
-	} else {
-	    puts ("La creación del grupo fue denegada.") ;
-	}
-   	//// Cerrar la tubería.
-   	close(identificador) ;
 
+	//// Verificar bandera de confirmación.
+	int confirmarGID = strcmp(texto_banderaConfirmacioon,"Afirmativo") ;
+	//// Invocar ...
+	int confirmarUsuarios = funcioon_ElegirUsuarios(texto_GroupID) ;
+
+        //// Imprimir banderas de confirmación.
+	if ( confirmarGID == 0 && confirmarUsuarios == 1 ) {
+
+	    //// Imprimir notificación se éxito.
+	    puts ("La creación del nuevo GID fue exitosa.") ;
+
+	    //// SECUENCIA PARA GUARDAR GID.
+
+	        //// Obtener la última posición de la matriz de GIDs.
+	    	int filas_matriz = funcioon_CalcularUultimaFilaMatriz(matriz_GIDs) ;
+		//// Asignar memoria a la última fila de la matriz de GIDs.
+		matriz_GIDs[filas_matriz] = (char*) calloc(5,sizeof(char)) ;
+		//// Almacenar el GID en la última fila de la matriz.
+		strcpy (matriz_GIDs[filas_matriz],texto_GroupID) ;
+
+	} else {
+
+	    //// Imprimir notificación de fracaso.
+	    printf ("La creación del GID ´%s´ fue denegada.",texto_GroupID) ;
+
+	}
+
+    //// Cerrar la tubería.
+    close(identificador) ;
+
+}
+
+
+int funcioon_ElegirUsuarios ( char* gid ) {
+
+    //// Preguntar los usuarios.
+    printf ("\n- Elegir los usuarios del grupo ´%s´:\n",gid) ;
+    puts ("- (Salir con número cero)") ;
+
+    //// Inicializar cadena de texto con el nombre de la tubería.
+    char* nombreTuberiia = "/tmp/nuevos" ;
+
+    //// Inicializar bandera para confirmación de PIDs.
+    int bandera = 1 ;
+
+    do {
+	
+	//// Asignar memoria a una cadena de texto.
+	char* texto = (char*) calloc(6,sizeof(char)) ;
+	//// Solicitar por consola un PID.
+	printf ("PID: ") ;
+	scanf ("%s",texto) ;
+	
+	//// Inicializar un identificador para abrir tubería.
+	int identificador = open (nombreTuberiia,O_RDWR) ;
+
+	//// Verificar lectura continua.
+	if ( strcmp(texto,"0") == 0 ) {
+
+	    //// Escribir en tubería bandera para terminar con lectura.
+	    write (identificador,"0",1) ;
+
+            //// Asignar memoria a una cadena de texto.
+            char* texto_confirmacioon = (char*) calloc(1,sizeof(char)) ;
+            //// Leer confirmación de tubería.
+            read (identificador,texto_confirmacioon,1) ;
+
+            //// Verificar si la confirmación es afirmativa.
+            if ( strcmp(texto_confirmacioon,"0") == 0 ) {
+		//// Actualizar bandera.
+                bandera = 0 ;
+            }
+
+	    //// Cerrar tubería.
+	    close (identificador) ;
+	    //// Imprimir notificación.
+	    puts ("\nSaliendo de PIDs.\n") ;
+	    //// Terminar con la solicitud de PIDs.
+	    break ;
+
+	} else {
+
+            //// Escribir en tubería posible PID.
+            write (identificador,texto,6) ;
+	    puts (texto) ;
+
+            //// Asignar memoria a una cadena de texto.
+            char* texto_confirmacioon = (char*) calloc(1,sizeof(char)) ;
+            //// Leer confirmación de tubería.
+            read (identificador,texto_confirmacioon,1) ;
+	    
+            //// Verificar si la confirmación es afirmativa.
+            if ( strcmp(texto_confirmacioon,"1") == 0 ) {
+		//// Imprimir notificación afirmativa.
+                printf ("El usuario ´%s´ puede agregarse.\n",texto) ;
+            } else {
+		//// Imprimir notificación negativa.
+                printf ("El usuario ´%s´ no puede agregarse.\n",texto) ;
+		//// Actualizar bandera.
+                bandera = 0 ;
+            }
+
+	}
+
+        //// Cerrar la tubería.
+        close (identificador) ;
+
+    } while ( bandera ) ;
+
+
+return bandera ;
 }
 
 

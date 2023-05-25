@@ -38,6 +38,9 @@ void funcioon_ImprimirMatriz (
 ) ;
 void funcioon_EnviarListaUsuarios (void) ;
 void funcioon_CrearGrupo (void) ;
+int funcioon_VerificarUsuarios (
+    char* gid
+) ;
 void funcioon_EliminarPID (
     char* texto_PID_eliminar
 ) ;
@@ -97,9 +100,9 @@ void funcioon_ImplementacioonDeTuberiias ( void ) {
 
     	//// SECUENCIA PARA LEER PID.
 	    //// Asignar memoria a una cadena de texto para guardar temporalmente un PID.
-	    char* temp = (char*) calloc(10,sizeof(char)) ;
+	    char* temp = (char*) calloc(5,sizeof(char)) ;
 	    //// Almacenar el PID en la cadena de texto temporal.
-	    read (identificador,temp,10) ;
+	    read (identificador,temp,5) ;
     	    //// Obtener el número de filas de la matriz de PIDs.
     	    int nuumero_UultimaFila = funcioon_CalcularUultimaFilaMatriz(matriz_PIDs) ;
 	    //// Verificar PIDs ya existentes.
@@ -227,7 +230,7 @@ void funcioon_EnviarListaUsuarios ( void ) {
 
     //// Enviar todos los PIDs.
     for ( int contador_i=0 ; contador_i < filas ; contador_i++ ) {
-	write (identificador,matriz_PIDs[contador_i],10) ;
+	write (identificador,matriz_PIDs[contador_i],5) ;
     }
 
     //// Cerrar la tubería.
@@ -258,10 +261,29 @@ void funcioon_CrearGrupo ( void ) {
     read (identificador,temp,5) ;
 
     //// Imprimir GIP.
-    printf ("\nNuevo GID: %s\n",temp) ;
+    printf ("\nNuevo GID: %s\n\n",temp) ;
+
+    //// Invocar ...
+    int confirmarGID = funcioon_VerificarExistencia(matriz_GIDs,temp) ;
 
     //// Verificar la existencia del GID ingresado.
-    if ( funcioon_VerificarExistencia(matriz_GIDs,temp) ) {
+    if ( confirmarGID ) {
+	//// Imprimir notificación de éxito.
+	printf ("Es posible crear el GID ´%s´.\n\n",temp) ;
+	//// Escribir una bandera de confirmación en la tubería.
+	write (identificador,"Afirmativo",10) ;
+    } else {
+	//// Imprimir notificación de fallo.
+	printf ("El GID ´%s´ ya existe.\n",temp) ;
+	//// Escribir una bandera de confirmación en la tubería.
+	write (identificador,"Negativooo",10) ;
+    }
+
+    //// Invocar ...
+    int confirmarUsuarios = funcioon_VerificarUsuarios(temp) ;
+
+    //// Verificar la existencia del GID ingresado.
+    if ( confirmarGID && confirmarUsuarios ) {
 	//// Obtener la última fila de la matriz de GIDs.
         int uultimaFila = funcioon_CalcularUultimaFilaMatriz(matriz_GIDs) ;
 	//// Asignar memoria a la última fila de la matriz.
@@ -270,18 +292,87 @@ void funcioon_CrearGrupo ( void ) {
 	strcpy (matriz_GIDs[uultimaFila],temp) ;
 	//// Imprimir notificación de éxito.
 	puts ("¡Nuevo GID guardado!") ;
-	//// Escribir una bandera de confirmación en la tubería.
-	write (identificador,"Afirmativo",10) ;
     } else {
-	//// Escribir una bandera de confirmación en la tubería.
-	write (identificador,"Negativo",8) ;
 	//// Imprimir notificación de fallo.
-	printf ("El GID ´%s´ ya existe.\n",temp) ;
+	printf ("\nNo es posible crear el GID ´%s´.\n",temp) ;
     }
 
     //// Cerrar la tubería.
     close(identificador) ;
 
+}
+
+
+int funcioon_VerificarUsuarios ( char* gid ) {
+
+    //// Inicializar un arreglo de caracteres, funciona como nombre de la tubería.
+    char* nombreTuberiia = "/tmp/nuevos" ;
+
+    //// Crear tubería.
+    mkfifo (nombreTuberiia,0666) ;
+
+    //// Inicializar bandera para confirmación de PIDs.
+    int bandera = 1 ;
+    //// Número de usuarios ingresados.
+    int usuarios = 0 ;
+
+    do {
+
+	//// Inicializar un identificador para abrir tubería.
+	int identificador = open (nombreTuberiia,O_RDWR) ;
+
+	//// Asignar memoria a una cadena de texto.
+	char* texto_lectura = (char*) calloc(6,sizeof(char)) ;
+	//// Leer contenido desde la tubería.
+	read (identificador,texto_lectura,6) ;
+
+	puts (texto_lectura) ;
+
+	//// Verificar el contenido de la lectura.
+	if ( strcmp(texto_lectura,"0") == 0 ) {
+
+	    if ( usuarios == 0 ) {
+		//// Imprimir notificación de fallo.
+		puts ("No puede crearse un grupo sin usuarios.") ;
+		//// Enviar confirmación negativa de creación.
+		write (identificador,"0",1) ;
+		//// Actualizar bandera.
+		bandera = 0 ;
+	    }
+
+	    //// Cerrar la tubería.
+	    close (identificador) ;
+	    //// Imprimir notificación.
+	    puts ("\nSaliendo de recibir PIDs.") ;
+	    //// Terminar con la lectura de PIDs.
+	    break ;
+
+	} else if ( funcioon_VerificarExistencia(matriz_PIDs,texto_lectura) == 0 ) {
+
+	    //// Imprimir notificación.
+	    printf ("El usuario ´%s´ existe para la creación del grupo ´%s´.\n",texto_lectura,gid) ;
+	    //// Enviar confirmación afirmativa de existencia.
+	    write (identificador,"1",1) ;
+	    //// Actualizar número de usuarios.
+	    usuarios++ ;
+
+	} else {
+
+	    //// Imprimir notificación.
+	    printf ("El usuario ´%s´ no existe para la creación del grupo ´%s´.\n",texto_lectura,gid) ;
+	    //// Enviar confirmación negativa de existencia.
+	    write (identificador,"0",1) ;
+	    //// Actualizar bandera.
+	    bandera = 0 ;
+
+	}
+
+	//// Cerrar la tubería.
+	close (identificador) ;
+
+    } while ( bandera ) ;
+
+return bandera ;
 }
 
 
