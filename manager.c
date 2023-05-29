@@ -7,44 +7,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include "funciones_manager.h"
 #pragma GCC poison gets
-
-
-
-// Global statements
-char** matriz_PIDs ;
-char** matriz_GIDs ;
-
-
-// Prototypes
-void funcioon_ImprimirRol (void) ;
-void funcioon_ImplementacioonDeTuberiias (void) ;
-int funcioon_CalcularUultimaFilaMatriz (
-    char** matriz_contar
-) ;
-int funcioon_VerificarExistencia (
-    char** matriz_buscar ,
-    char* texto_PID_verificarExistente
-) ;
-void funcioon_AccionarMenuu (
-    char* instruccioon ,
-    char* pid
-) ;
-void funcioon_ImprimirMatriz (
-    char** matriz_imprimir ,
-    char* mensaje_imprimir ,
-    char* etiqueta_imprimir
-) ;
-void funcioon_EnviarListaUsuarios (void) ;
-void funcioon_CrearGrupo (void) ;
-int funcioon_VerificarUsuarios (
-    char* gid
-) ;
-void funcioon_EliminarPID (
-    char* texto_PID_eliminar
-) ;
-
 
 int main ( ) {
 
