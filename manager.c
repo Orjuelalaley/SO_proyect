@@ -215,33 +215,42 @@ void funcioon_CrearGrupo ( void ) {
     //// Parámetros: nombre de la tubería, permisos de tubería.
     mkfifo (nombreTuberiia,0666) ;
 
-    //// Abrir la tubería ya creada, solo para la funcionalidad de escritura.
-    //// Parámetros: nombre de la tubería, funcionalidad.
-    int identificador = open (nombreTuberiia,O_RDWR) ;
+    //// Declarar un identificador para manejo de archivos.
+    int identificador ;
 
-    //// Asignar memoria a una cadena de texto para guardar temporalmente un GID.
-    char* temp = (char*) calloc(5,sizeof(char)) ;
-    //// Almacenar el GID en la cadena de texto temporal.
-    read (identificador,temp,5) ;
+    //// SECUENCIA PARA LEER NUEVO GID.
+    	//// Abrir la tubería ya creada, solo para la funcionalidad de escritura.
+    	//// Parámetros: nombre de la tubería, funcionalidad.
+    	identificador = open (nombreTuberiia,O_RDONLY) ;
+    	//// Asignar memoria a una cadena de texto para guardar temporalmente un GID.
+    	char* temp = (char*) calloc(5,sizeof(char)) ;
+    	//// Almacenar el GID en la cadena de texto temporal.
+    	read (identificador,temp,5) ;
+	//// Cerrar tubería.
+	close (identificador) ;
+    	//// Imprimir GIP.
+    	printf ("\nNuevo GID: %s\n\n",temp) ;
+    	//// Invocar ...
+    	int confirmarGID = funcioon_VerificarExistencia(matriz_GIDs,temp) ;
 
-    //// Imprimir GIP.
-    printf ("\nNuevo GID: %s\n\n",temp) ;
-
-    //// Invocar ...
-    int confirmarGID = funcioon_VerificarExistencia(matriz_GIDs,temp) ;
-
-    //// Verificar la existencia del GID ingresado.
-    if ( confirmarGID ) {
-	//// Imprimir notificación de éxito.
-	printf ("Es posible crear el GID ´%s´.\n\n",temp) ;
-	//// Escribir una bandera de confirmación en la tubería.
-	write (identificador,"Afirmativo",10) ;
-    } else {
-	//// Imprimir notificación de fallo.
-	printf ("El GID ´%s´ ya existe.\n",temp) ;
-	//// Escribir una bandera de confirmación en la tubería.
-	write (identificador,"Negativooo",10) ;
-    }
+    //// SECUENCIA PARA CONFIRMAR GID.
+    	//// Abrir la tubería ya creada, solo para la funcionalidad de escritura.
+    	//// Parámetros: nombre de la tubería, funcionalidad.
+    	identificador = open (nombreTuberiia,O_WRONLY) ;
+    	//// Verificar la existencia del GID ingresado.
+    	if ( confirmarGID ) {
+    	    //// Imprimir notificación de éxito.
+    	    printf ("Es posible crear el GID ´%s´.\n\n",temp) ;
+    	    //// Escribir una bandera de confirmación en la tubería.
+    	    write (identificador,"Afirmativo",10) ;
+    	} else {
+    	    //// Imprimir notificación de fallo.
+    	    printf ("El GID ´%s´ ya existe.\n",temp) ;
+    	    //// Escribir una bandera de confirmación en la tubería.
+    	    write (identificador,"Negativooo",10) ;
+    	}
+	//// Cerrar tubería.
+	close (identificador) ;
 
     //// Invocar ...
     int confirmarUsuarios = funcioon_VerificarUsuarios(temp) ;
@@ -275,6 +284,8 @@ int funcioon_VerificarUsuarios ( char* gid ) {
     //// Crear tubería.
     mkfifo (nombreTuberiia,0666) ;
 
+    //// Declarar un identificador para abrir tubería.
+    int identificador ;
     //// Inicializar bandera para confirmación de PIDs.
     int bandera = 1 ;
     //// Número de usuarios ingresados.
@@ -283,17 +294,19 @@ int funcioon_VerificarUsuarios ( char* gid ) {
     do {
 
 	//// Inicializar un identificador para abrir tubería.
-	int identificador = open (nombreTuberiia,O_RDWR) ;
-
+	identificador = open (nombreTuberiia,O_RDONLY) ;
 	//// Asignar memoria a una cadena de texto.
 	char* texto_lectura = (char*) calloc(6,sizeof(char)) ;
 	//// Leer contenido desde la tubería.
 	read (identificador,texto_lectura,6) ;
-
-	puts (texto_lectura) ;
+	//// Cerrar tubería.
+	close (identificador) ;
 
 	//// Verificar el contenido de la lectura.
 	if ( strcmp(texto_lectura,"0") == 0 ) {
+
+	    //// Inicializar un identificador para abrir tubería. 
+            identificador = open (nombreTuberiia,O_WRONLY) ;
 
 	    if ( usuarios == 0 ) {
 		//// Imprimir notificación de fallo.
@@ -313,26 +326,31 @@ int funcioon_VerificarUsuarios ( char* gid ) {
 
 	} else if ( funcioon_VerificarExistencia(matriz_PIDs,texto_lectura) == 0 ) {
 
+	    //// Inicializar un identificador para abrir tubería. 
+            identificador = open (nombreTuberiia,O_WRONLY) ;
 	    //// Imprimir notificación.
 	    printf ("El usuario ´%s´ existe para la creación del grupo ´%s´.\n",texto_lectura,gid) ;
 	    //// Enviar confirmación afirmativa de existencia.
 	    write (identificador,"1",1) ;
+	    //// Cerrar la tubería.
+	    close (identificador) ;
 	    //// Actualizar número de usuarios.
 	    usuarios++ ;
 
 	} else {
 
+	    //// Inicializar un identificador para abrir tubería. 
+            identificador = open (nombreTuberiia,O_WRONLY) ;
 	    //// Imprimir notificación.
 	    printf ("El usuario ´%s´ no existe para la creación del grupo ´%s´.\n",texto_lectura,gid) ;
 	    //// Enviar confirmación negativa de existencia.
 	    write (identificador,"0",1) ;
+	    //// Cerrar la tubería.
+	    close (identificador) ;
 	    //// Actualizar bandera.
 	    bandera = 0 ;
 
 	}
-
-	//// Cerrar la tubería.
-	close (identificador) ;
 
     } while ( bandera ) ;
 
