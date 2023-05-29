@@ -1,8 +1,3 @@
-# Para compilar el proyecto.
-
-1. Utilizar el comando ´gcc <archivo.c> -o <archivo>´ para todos los archivos C.
-2. Ejecutar el comando ´./manager´.
-3. Ejecutar el comando ´./talker´.
 # Proyecto Sistemas Operativos
 
 En este proyecto implementaremos un chat, que es una aplicación muy similar a lo que hoy es
