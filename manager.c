@@ -1,4 +1,6 @@
 
+#include "funciones_manager.h"
+
 // Preprocessor directives
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +9,16 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "funciones_manager.h"
+#include <signal.h>
 #pragma GCC poison gets
+
+
+
+// Prototypes
+void funcioon_EnviarSenial (
+    char** matrizTemporalParaAgregarPIDsExitosos
+) ;
+
 
 int main ( ) {
 
@@ -25,7 +35,7 @@ int main ( ) {
 
     funcioon_ImprimirRol() ;
 
-return 0;
+return 0 ;
 }
 
 
@@ -252,8 +262,11 @@ void funcioon_CrearGrupo ( void ) {
 	//// Cerrar tubería.
 	close (identificador) ;
 
+    //// Crear un arreglo de PIDs.
+    char** matriz_temp = (char**) calloc(100,sizeof(char*)) ;
+
     //// Invocar ...
-    int confirmarUsuarios = funcioon_VerificarUsuarios(temp) ;
+    int confirmarUsuarios = funcioon_VerificarUsuarios(temp,matriz_temp) ;
 
     //// Verificar la existencia del GID ingresado.
     if ( confirmarGID && confirmarUsuarios ) {
@@ -264,7 +277,9 @@ void funcioon_CrearGrupo ( void ) {
 	//// Almacenar el GID en la matriz.
 	strcpy (matriz_GIDs[uultimaFila],temp) ;
 	//// Imprimir notificación de éxito.
-	puts ("¡Nuevo GID guardado!") ;
+	puts ("\n¡Nuevo GID guardado!") ;
+	//// Invocar ...
+	funcioon_EnviarSenial(matriz_temp) ;
     } else {
 	//// Imprimir notificación de fallo.
 	printf ("\nNo es posible crear el GID ´%s´.\n",temp) ;
@@ -276,7 +291,7 @@ void funcioon_CrearGrupo ( void ) {
 }
 
 
-int funcioon_VerificarUsuarios ( char* gid ) {
+int funcioon_VerificarUsuarios ( char* gid , char** matriz_temp ) {
 
     //// Inicializar un arreglo de caracteres, funciona como nombre de la tubería.
     char* nombreTuberiia = "/tmp/nuevos" ;
@@ -334,6 +349,11 @@ int funcioon_VerificarUsuarios ( char* gid ) {
 	    write (identificador,"1",1) ;
 	    //// Cerrar la tubería.
 	    close (identificador) ;
+	    //// Obtener la última fila de la matriz.
+	    int fila = funcioon_CalcularUultimaFilaMatriz(matriz_temp) ;
+	    //// Guardar en la última fila de la matriz el último PID exitoso.
+	    matriz_temp[fila] = (char*) calloc(6,sizeof(char)) ;
+	    strcpy (matriz_temp[fila],texto_lectura) ;
 	    //// Actualizar número de usuarios.
 	    usuarios++ ;
 
@@ -356,6 +376,25 @@ int funcioon_VerificarUsuarios ( char* gid ) {
 
 return bandera ;
 }
+
+
+void funcioon_EnviarSenial ( char** matriz ) {
+
+    puts ("\nEste es un mensaje desde señal.\n") ;
+
+    //// Obtener el número de filas de la matriz de PIDs.
+    int filas = funcioon_CalcularUultimaFilaMatriz(matriz) ;
+
+    //// Recorrer todo el arreglo de PIDs temporales para mandar señal.
+    for ( int contador_i=0 ; contador_i < filas ; contador_i++ ) {
+	//// Convertir cada fila en un dígito entero.
+	int pid_temp = atoi(matriz[contador_i]) ;
+	//// Mandar señal.
+	kill (pid_temp,SIGUSR1) ;
+    }
+
+}
+
 
 
 void funcioon_EliminarPID ( char* texto_pid_eliminar ) {

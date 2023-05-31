@@ -12,12 +12,12 @@
 
 
 
-int main ( int argc,char *argv[] ) {
+int main ( int argc , char *argv[] ) {
 
     funcioon_ImprimirRol() ;
     
 
-    matriz_GIDs = (char**) calloc(100,sizeof(char *)) ;
+    matriz_GIDs = (char**) calloc(100,sizeof(char*)) ;
     funcioon_InvocarEleccioon() ;
     
 
@@ -25,6 +25,7 @@ int main ( int argc,char *argv[] ) {
 
 return 0;
 }
+
 
 void funcioon_ImprimirRol (void) {
 
@@ -35,8 +36,9 @@ void funcioon_ImprimirRol (void) {
         "- - - - - - - - - - - - -\n"
         "\n\n\n\n"
     ) ;
-	
+
 }
+
 
 void funcioon_ImprimirMenuu (void) {
 
@@ -51,6 +53,7 @@ void funcioon_ImprimirMenuu (void) {
 
 }
 
+
 int askHasCharacter ( char string[] ) {
 
     size_t string_size = strlen(string) ;
@@ -64,7 +67,8 @@ int askHasCharacter ( char string[] ) {
 return 0 ;
 }
 
-void funcioon_InvocarEleccioon (void) {
+
+void funcioon_InvocarEleccioon ( void ) {
 
     char* caracter_opcioonElegida = (char*) calloc(10,sizeof(char)) ;
     
@@ -85,7 +89,7 @@ void funcioon_InvocarEleccioon (void) {
         }
     
         //// Accionar función dependiendo de la opción elegida.
-        switch (entero_opcioonElegida) {
+        switch ( entero_opcioonElegida ) {
     
             case 0 :
     
@@ -146,20 +150,20 @@ void funcioon_InvocarEleccioon (void) {
 void funcioon_ImplementacioonDeTuberiias ( char* mensaje ) {
 
     //// Declarar un entero como identificador de archivos.
-    int identificador;
+    int identificador ;
     
     //// Declarar un arreglo de caracteres, funciona como nombre de la tubería.
-    char *nombreTuberiia = "/tmp/instrucciones";
+    char *nombreTuberiia = "/tmp/instrucciones" ;
     
     //// Abrir la tubería ya creada, solo para la funcionalidad de escritura.
     //// Parámetros: nombre de la tubería, funcionalidad.
-    identificador = open(nombreTuberiia, O_WRONLY);
+    identificador = open(nombreTuberiia, O_WRONLY) ;
     
     //// SECUENCIA PARA ENVIAR PID.
         //// Asignar memoria a una cadena de texto para leer PID.
-        char *textoPID = (char *)calloc(5, sizeof(char));
+        char *textoPID = (char*) calloc(5,sizeof(char)) ;
         //// Obtener PID.
-        pid_t pid = getpid();
+        pid_t pid = getpid() ;
         //// Guardar PID en la cadena de texto.
         sprintf (textoPID,"%d",pid) ;
         //// Imprimir PID.
@@ -179,7 +183,7 @@ void funcioon_ImplementacioonDeTuberiias ( char* mensaje ) {
 }
 
 
-int funcioon_CalcularUultimaFilaMatriz (char** matriz) {
+int funcioon_CalcularUultimaFilaMatriz ( char** matriz ) {
 
     int filas = 0 ;
     
@@ -191,7 +195,7 @@ return filas ;
 }
 
 
-void funcioon_ListarUsuarios (void) {
+void funcioon_ListarUsuarios ( void ) {
 
     //// Inicializar un arreglo de caracteres, funciona como nombre de la tubería.
     char* nombreTuberiia = "/tmp/usuarios" ;
@@ -220,14 +224,14 @@ void funcioon_ListarUsuarios (void) {
 }
 
 
-void funcioon_ListarIntegrantes (void) {
+void funcioon_ListarIntegrantes ( void ) {
 
     puts ("Listar integrantes") ;
 
 }
 
 
-void funcioon_CrearGrupo (void) {
+void funcioon_CrearGrupo ( void ) {
 
     //// Asignar memoria a una cadena de texto para leer Group ID.
     char* texto_GroupID = (char*) calloc(5,sizeof(char)) ;
@@ -281,7 +285,7 @@ void funcioon_CrearGrupo (void) {
 
     } else {
     	//// Imprimir notificación de fracaso.
-    	printf ("La creación del GID ´%s´ fue denegada.",texto_GroupID) ;
+    	printf ("La creación del GID ´%s´ fue denegada.\n",texto_GroupID) ;
     }
     
     //// Cerrar la tubería.
@@ -380,14 +384,14 @@ return bandera ;
 }
 
 
-void funcioon_EnviarMensajeIndividual (void) {
+void funcioon_EnviarMensajeIndividual ( void ) {
 
     puts ("Enviar mensaje individual") ;
     
 }
 
 
-void funcioon_EnviarMensajeGrupal (void) {
+void funcioon_EnviarMensajeGrupal ( void ) {
 
     puts ("Enviar mensaje grupal") ;
 
