@@ -1,6 +1,4 @@
 
-#include "funciones_talker.h"
-
 // Preprocessor directives
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,11 +8,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
+
+#include "funciones_talker.h"
+
 #pragma GCC poison gets
 
 
 
 // Prototypes
+void funcioon_ListarMiembros (void) ;
 void funcioon_RecibirSenial (
     int signum
 ) ;
@@ -237,7 +239,71 @@ void funcioon_ListarUsuarios ( void ) {
 
 void funcioon_ListarIntegrantes ( void ) {
 
-    puts ("Listar integrantes") ;
+    //// Asignar memoria a una cadena de texto para leer Group ID.
+    char* texto_GroupID = (char*) calloc(5,sizeof(char)) ;
+    
+    //// Preguntar por el Group ID.
+    printf ("Group ID: ") ;
+    scanf ("%s",texto_GroupID) ;
+
+    //// Inicializar un arreglo de caracteres, funciona como nombre de la tubería.
+    char* nombreTuberiia = "/tmp/usuarios" ;
+    
+    //// Declarar un entero como identificador de archivos.
+    int identificador = open (nombreTuberiia,O_WRONLY) ;
+
+    //// Escribir por la tubería el GID a buscar.
+    write (identificador,texto_GroupID,5) ;
+
+    //// Cerrar tubería.
+    close (identificador) ;
+
+    //// SECUENCIA PARA ESCUCHAR BANDERA.
+        //// Asignar nuevo nombre a la tubería.
+        nombreTuberiia = "/tmp/bandera" ;
+        //// Asignar memoria a una cadena de texto para leer bandera.
+        char* bandera = (char*) calloc(1,sizeof(char)) ;
+        //// Declarar un entero como identificador de archivos.
+        identificador = open (nombreTuberiia,O_RDONLY) ;
+        //// Guardar el valor de la bandera desde la tubería.
+        read (identificador,bandera,1) ;
+        //// Cerrar tubería.
+        close (identificador) ;
+
+    //// SECUENCIA PARA ESCUCHAR VALORES.
+        if ( strcmp(bandera,"1") == 0 ) {
+	    printf ("GID #%s existe.\n",texto_GroupID) ;
+            funcioon_ListarMiembros() ;
+        } else {
+            printf ("GID #%s equivocado.\n",texto_GroupID) ;
+        }
+
+}
+
+
+void funcioon_ListarMiembros ( void ) {
+
+    //// Inicializar un arreglo de caracteres, funciona como nombre de la tubería.
+    char* nombreTuberiia = "/tmp/miembros" ;
+    
+    //// Declarar un entero como identificador de archivos.
+    int identificador = open (nombreTuberiia,O_RDONLY) ;
+
+    //// Asignar memoria a una cadena de texto para leer número de filas.
+    char* texto_filas = (char*) calloc(1,sizeof(char)) ;
+    read (identificador,texto_filas,1) ;
+    int filas = atoi(texto_filas) ;
+    
+    puts ("* TALKERS") ;
+    //// Leer desde la tubería los PIDs.
+    for ( int contador_i=0 ; contador_i < filas ; contador_i++ ) {
+	char* contenido = (char*) calloc(4,sizeof(char)) ;
+	read (identificador,contenido,4) ;
+	printf ("PID: %s\n",contenido) ;
+    }
+
+    //// Cerrar tubería.
+    close (identificador) ;
 
 }
 
