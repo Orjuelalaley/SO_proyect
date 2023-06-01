@@ -1,4 +1,6 @@
 
+#include "funciones_talker.h"
+
 // Preprocessor directives
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,19 +9,25 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "funciones_talker.h"
+#include <signal.h>
 #pragma GCC poison gets
 
 
 
-int main ( int argc , char *argv[] ) {
+// Prototypes
+void funcioon_RecibirSenial (
+    int signum
+) ;
+
+
+int main ( int argc , char* argv[] ) {
 
     funcioon_ImprimirRol() ;
     
 
     matriz_GIDs = (char**) calloc(100,sizeof(char*)) ;
     funcioon_InvocarEleccioon() ;
-    
+
 
     funcioon_ImprimirRol() ;
 
@@ -78,6 +86,9 @@ void funcioon_InvocarEleccioon ( void ) {
     
         //// Invocar ...
         funcioon_ImprimirMenuu() ;
+
+	//// Recibir señal para la creación de grupo.
+        signal (SIGUSR1,funcioon_RecibirSenial) ;
     
         //// Solicitar por consola la opción.
         printf ("* Opción: ") ;
@@ -137,7 +148,7 @@ void funcioon_InvocarEleccioon ( void ) {
                 puts ("¡Opción incorrecta!") ;
                 entero_opcioonElegida = -1 ;
                 break ;
-    
+
         } //// te amo ;
     
         printf ("\n\n\n\n") ;
@@ -153,11 +164,11 @@ void funcioon_ImplementacioonDeTuberiias ( char* mensaje ) {
     int identificador ;
     
     //// Declarar un arreglo de caracteres, funciona como nombre de la tubería.
-    char *nombreTuberiia = "/tmp/instrucciones" ;
+    char* nombreTuberiia = "/tmp/instrucciones" ;
     
     //// Abrir la tubería ya creada, solo para la funcionalidad de escritura.
     //// Parámetros: nombre de la tubería, funcionalidad.
-    identificador = open(nombreTuberiia, O_WRONLY) ;
+    identificador = open (nombreTuberiia,O_WRONLY) ;
     
     //// SECUENCIA PARA ENVIAR PID.
         //// Asignar memoria a una cadena de texto para leer PID.
@@ -279,9 +290,12 @@ void funcioon_CrearGrupo ( void ) {
     	    //// Obtener la última posición de la matriz de GIDs.
     	    int filas_matriz = funcioon_CalcularUultimaFilaMatriz(matriz_GIDs) ;
     	    //// Asignar memoria a la última fila de la matriz de GIDs.
-    	    matriz_GIDs[filas_matriz] = (char *)calloc(5, sizeof(char)) ;
+    	    matriz_GIDs[filas_matriz] = (char*) calloc(5,sizeof(char)) ;
     	    //// Almacenar el GID en la última fila de la matriz.
-    	    strcpy (matriz_GIDs[filas_matriz], texto_GroupID) ;
+    	    strcpy (matriz_GIDs[filas_matriz],texto_GroupID) ;
+
+	//// Recibir señal para guardar GID.
+        // signal (SIGUSR1,funcioon_RecibirSenial) ;
 
     } else {
     	//// Imprimir notificación de fracaso.
@@ -377,10 +391,41 @@ int funcioon_ElegirUsuarios ( char* gid ) {
     	    }
 
     	}
+
+	/*
+	//// Cerrar tubería.
+	close (identificador) ;
+	*/
     
     } while ( bandera ) ;
 
 return bandera ;
+}
+
+
+void funcioon_RecibirSenial ( int signum ) {
+
+    //// Asignar para guardar el nombre de la tubería.
+    char* nombreTuberiia = (char*) calloc(12,sizeof(char)) ;
+    strcat (nombreTuberiia,"/tmp/") ;
+    //// Obtener el PID del proceso.
+    int pid = getpid() ;
+    char* texto_pid = (char*) calloc(5,sizeof(char)) ;
+    sprintf (texto_pid,"%d",pid) ;
+    strcat (nombreTuberiia,texto_pid) ;
+    //// Asignar un identificador para el manejo de la tubería.
+    int identificador = open (nombreTuberiia,O_RDONLY) ;
+    //// Obtener la última fila para asignar nuevo GID.
+    int fila = funcioon_CalcularUultimaFilaMatriz(matriz_GIDs) ;
+    //// Asignar memoria a la matriz de GIDs.
+    matriz_GIDs[fila] = (char*) calloc(5,sizeof(char)) ;
+    //// Leer GID desde la tubería.
+    read (identificador,matriz_GIDs[fila],5) ;
+    //// Cerrar tubería.
+    close (identificador) ;
+    //// Imprimir mensaje.
+    printf ("\n\n\n--> Al PID #%s se le ha incluido en el GID #%s.\n\n\n",texto_pid,matriz_GIDs[fila]) ;
+
 }
 
 

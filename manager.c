@@ -16,7 +16,8 @@
 
 // Prototypes
 void funcioon_EnviarSenial (
-    char** matrizTemporalParaAgregarPIDsExitosos
+    char** matrizTemporalParaAgregarPIDsExitosos ,
+    char* gidParaEnviarAlUsuario
 ) ;
 
 
@@ -173,7 +174,7 @@ void funcioon_ImprimirMatriz ( char** matriz , char* msg , char* etiqueta ) {
 
     //// Imprimir todos los PIDs de la matriz.
     printf ("* %s\n",msg) ;
-    for ( int contador_i=0 ; contador_i < filasMatriz ; contador_i++ ) {
+    for ( int contador_i=0 ; contador_i <= filasMatriz ; contador_i++ ) {
         printf ("%s: %s\n",etiqueta,matriz[contador_i]) ;
     }
 
@@ -279,7 +280,7 @@ void funcioon_CrearGrupo ( void ) {
 	//// Imprimir notificación de éxito.
 	puts ("\n¡Nuevo GID guardado!") ;
 	//// Invocar ...
-	funcioon_EnviarSenial(matriz_temp) ;
+	funcioon_EnviarSenial(matriz_temp,temp) ;
     } else {
 	//// Imprimir notificación de fallo.
 	printf ("\nNo es posible crear el GID ´%s´.\n",temp) ;
@@ -325,7 +326,7 @@ int funcioon_VerificarUsuarios ( char* gid , char** matriz_temp ) {
 
 	    if ( usuarios == 0 ) {
 		//// Imprimir notificación de fallo.
-		puts ("No puede crearse un grupo sin usuarios.") ;
+		puts ("\nNo puede crearse un grupo sin usuarios.") ;
 		//// Enviar confirmación negativa de creación.
 		write (identificador,"0",1) ;
 		//// Actualizar bandera.
@@ -372,25 +373,44 @@ int funcioon_VerificarUsuarios ( char* gid , char** matriz_temp ) {
 
 	}
 
+	//// Cerrar la tubería.
+	close (identificador) ;
+
     } while ( bandera ) ;
 
 return bandera ;
 }
 
 
-void funcioon_EnviarSenial ( char** matriz ) {
+void funcioon_EnviarSenial ( char** matriz , char* gid ) {
 
-    puts ("\nEste es un mensaje desde señal.\n") ;
+    puts ("\nEnviando notificaciones...") ;
 
     //// Obtener el número de filas de la matriz de PIDs.
     int filas = funcioon_CalcularUultimaFilaMatriz(matriz) ;
 
     //// Recorrer todo el arreglo de PIDs temporales para mandar señal.
     for ( int contador_i=0 ; contador_i < filas ; contador_i++ ) {
+
 	//// Convertir cada fila en un dígito entero.
 	int pid_temp = atoi(matriz[contador_i]) ;
 	//// Mandar señal.
 	kill (pid_temp,SIGUSR1) ;
+	//// Asignar a una cadena de texto el nombre de la tubería.
+	char* nombreTuberiia = (char*) calloc(12,sizeof(char)) ;
+	strcat (nombreTuberiia,"/tmp/") ;
+	strcat (nombreTuberiia,matriz[contador_i]) ;
+	//// Crear una tubería para pasar el GID.
+	mkfifo (nombreTuberiia,0666) ;
+	//// Inicializar un identificador para el manejo de tuberías.
+	int identificador = open (nombreTuberiia,O_WRONLY) ;
+	//// Escribir en la tubería el GID.
+	write (identificador,gid,5) ;
+	//// Cerrar la tubería.
+	close (identificador) ;
+	//// Imprimir notificación.
+	printf ("El PID #%s ahora pertenece al GID #%s.\n",matriz[contador_i],gid) ;
+
     }
 
 }
